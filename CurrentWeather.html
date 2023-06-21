@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API</title>
+    <!-- <link rel="stylesheet" href="/Weather/fold/style.css"> -->
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background-repeat: no-repeat;
+            background-size:cover;
+        }
+
+        h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: white;
+        }
+
+        @keyframes fadeIn{
+            from{
+                opacity: 0;
+            }
+            to{
+                opacity: 1;
+            }
+        }
+        .weather-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            animation: fadeIn 2s;
+        }
+        
+        .weather-item {
+            flex-basis: 200px;
+            padding: 20px;
+            margin: 10px;
+            background-color: grey;
+            border-radius:50px;
+        }
+
+        .weather-icon {
+            margin-bottom: 10px;
+        }
+
+        .time {
+            margin-top: 20px;
+        }
+
+        .clear {
+            background-color: rgba(98, 119, 174, 0.8);
+            /* sunny */
+        }
+
+        .clouds {
+            background-color: rgba(120, 123, 125, 0.5);
+            /* cloudy */
+        }
+
+        .rain {
+            background-color: rgba(82, 83, 84, 0.4);
+            /* rainy */
+        }
+
+        .default {
+            background-color: #757575;
+            /* default */
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="current">
+        <h2 class="cw">현재 날씨</h2>
+        <div class="weather-container">
+            <div class="weather-item">
+                <h3 class="time">현재 시간:</h3>
+                <h3 class="ctemp">현재 온도:</h3>
+                <h3 class="lowtemp">최저 온도:</h3>
+                <h3 class="hightemp">최고 온도:</h3>
+                <div class="weather-icon"></div>
+            </div>
+        </div>
+    </div>
+    <div class="week">
+        <a href="Calender.html" style="display: inline-block;">
+            <button>주간 날씨 확인하기</button>
+        </a>
+    </div>
+
+    <script>
+        function updateCurrentTime() {
+            var currentTime = new Date();
+            var hours = currentTime.getHours();
+            var minutes = currentTime.getMinutes();
+            var seconds = currentTime.getSeconds();
+
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+
+            var formattedTime = hours + ':' + minutes + ':' + seconds;
+            $('.time').text('현재 시간: ' + formattedTime);
+        }
+
+        // Initial call to set the current time
+        updateCurrentTime();
+
+        // Update the current time every second (1000 milliseconds)
+        setInterval(updateCurrentTime, 1000);
+
+
+        
+        // $.getJSON(`https://api.openweathermap.org/data/2.5/weather?q=Seoul&appid=cdd7a39d79ee9a2679ebc153356ed983&units=metric`,
+        
+        const loc = prompt('지역 이름 입력 : ') || "Seoul";
+        $.getJSON(`https://api.openweathermap.org/data/2.5/weather?q=${loc}&appid=cdd7a39d79ee9a2679ebc153356ed983&units=metric`,
+            function (result) {
+                // 날씨 정보 가져오기
+                var currentTemp = result.main.temp.toFixed(1);
+                var lowTemp = result.main.temp_min.toFixed(1);
+                var highTemp = result.main.temp_max.toFixed(1);
+                var weatherIconUrl = 'https://openweathermap.org/img/wn/' + result.weather[0].icon + '.png';
+                var weatherDescription = result.weather[0].description;
+
+                var cwElement = document.querySelector('.cw');
+                cwElement.innerText = loc + '의 현재 날씨';
+
+
+                var weatherItem = $('.weather-item');
+                if (weatherDescription.includes('cloud')) {
+                    weatherItem.addClass('clouds');
+                } else if (weatherDescription.includes('rain')) {
+                    weatherItem.addClass('rain');
+                } else if (weatherDescription.includes('clear')) {
+                    weatherItem.addClass('clear');
+                } else {
+                    weatherItem.addClass('default');
+                }
+
+                // 날씨에 따라 배경 이미지 설정
+                var body = document.body;
+                if (weatherDescription.includes('cloud')) {
+                    body.style.backgroundImage = "url('image/cloudy.jpg')";
+                } else if (weatherDescription.includes('rain')) {
+                    body.style.backgroundImage = "url('image/rainy.jpg')";
+                } else if (weatherDescription.includes('mist')) {
+                    body.style.backgroundImage = "url('image/rainy.jpg')";
+                } else if (weatherDescription.includes('clear')) {
+                    body.style.backgroundImage = "url('image/sunny.jpg')";
+                } 
+                else {
+                    body.style.backgroundImage = "url('images/default.jpg')";
+                }
+
+                // 날씨 정보 업데이트
+                $('.ctemp').append(currentTemp + '°C');
+                $('.lowtemp').append(lowTemp + '°C');
+                $('.hightemp').append(highTemp + '°C');
+                $('.weather-icon').html('<img src="' + weatherIconUrl + '" alt="' + weatherDescription + '">');
+            });
+    </script>
+    
+</body>
+</html>

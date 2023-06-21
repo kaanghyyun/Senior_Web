@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        위도 & 경도 출력
+    </title>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <meta charset="utf-8">
+    <title>키워드로 장소 검색하고, 클릭하여 위치 좌표 정보 얻기</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        #result {
+            margin-right: 60%;
+        }
+
+        .current {
+            width: 600px;
+            float: right;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: white;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .weather-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            animation: fadeIn 2s;
+        }
+
+        .weather-item {
+            flex-basis: 200px;
+            padding: 20px;
+            margin: 10px;
+            background-color: grey;
+            border-radius: 50px;
+        }
+
+        .weather-icon {
+            margin-bottom: 10px;
+        }
+
+        .time {
+            margin-top: 20px;
+        }
+
+        .clear {
+            background-color: rgba(98, 119, 174, 0.8);
+            /* sunny */
+        }
+
+        .clouds {
+            background-color: rgba(120, 123, 125, 0.5);
+            /* cloudy */
+        }
+
+        .rain {
+            background-color: rgba(82, 83, 84, 0.4);
+            /* rainy */
+        }
+
+        .default {
+            background-color: #757575;
+            /* default */
+        }
+    </style>
+</head>
+<script type="text/javascript"
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f947576697091bff2e0e78d06f2907db"></script>
+
+<body>
+    <br>
+    <span style="
+    font-weight: bold; 
+    font-size: 1.5em;
+    line-height: 1.0em; 
+    color: rgb(152, 212, 193);
+    font-family: sans-serif;
+    ">
+        &lt;지역 이름 검색&gt;</span>
+    <span style="
+    font-weight: bold; 
+    font-size: 1.1em;
+    line-height: 1.0em; 
+    color: white;
+    font-family: sans-serif;
+    ">
+        <span style="
+    font-size: 1em;
+    line-height: 1.0em; 
+    color: black;
+    font-family: sans-serif;
+    ">
+            <br><br></span>
+
+
+        <div class="map_wrap">
+            <div id="myNav" class="menu_sid">
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+                <div class="menu_sid-content">
+                    <a href="Calender.html">Weather Forecast</a>
+                </div>
+            </div>
+            <header>
+                <!-- header inner -->
+                <div class="header">
+                    <div class="menu_sitbar">
+                        <ul class="menu">
+                            <li><button type="button">
+                                    <img onclick="openNav()" src="images/menu_icon.png" alt="#" />
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+            </header>
+            <div id="menu_wrap" class="bg_white">
+                <div class="option">
+                    <div>
+                        <form onsubmit="searchPlaces(); return false;">
+                            <input type="text" value="" id="keyword" size="30">
+                            <button type="submit">검색하기</button>
+                            <span id="error" style="color: red; display: none;">주요 지명 입력하기</span>
+                        </form>
+                    </div>
+                </div>
+                <hr>
+                <ul id="placesList"></ul>
+                <div id="pagination"></div>
+            </div>
+            <div style="display:flex;">
+                <div id="map"
+                    style="width: 50%; height: 500px; position: relative; overflow: hidden; background: url(&quot;https://t1.daumcdn.net/mapjsapi/images/2x/bg_tile.png&quot;);">
+                    <div
+                        style="position: absolute; cursor: default; z-index: 1; margin: 0px 6px; height: 19px; line-height: 14px; left: 0px; bottom: 0px; color: rgb(0, 0, 0);">
+                        <div style="color: rgb(0, 0, 0); text-align: center; font-size: 10px; float: left;">
+                            <div
+                                style="float: left; margin: 2px 3px 0px 4px; height: 6px; transition: width 0.1s ease 0s; border-top: none rgb(0, 0, 0); border-right: 2px solid rgb(0, 0, 0); border-bottom: 2px solid rgb(0, 0, 0); border-left: 2px solid rgb(0, 0, 0); border-image: initial; width: 46px;">
+                            </div>
+                            <div
+                                style="float: left; margin: 0px 4px 0px 0px; font-family: AppleSDGothicNeo-Regular, 돋움, dotum, sans-serif; font-weight: bold; color: rgb(0, 0, 0);">
+                                50m</div>
+                        </div>
+                    </div>
+
+                </div>
+                <div>
+                    <div class="current">
+                        <h2 class="cw">현재 좌표의 날씨</h2>
+                        <div class="weather-container">
+                            <div class="weather-item">
+                                <h3 class="time">현재 시간:</h3>
+                                <div>
+                                    <h3>현재 온도:</h3>
+                                    <h3 class="ctemp"></h3>
+                                </div>
+                                <div>
+                                    <h3>최저 온도:</h3>
+                                    <h3 class="lowtemp"></h3>
+                                </div>
+                                <div>
+                                    <h3>최고 온도:</h3>
+                                    <h3 class="hightemp"></h3>
+                                </div>
+                                <div class="weather-icon"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="week">
+                        <a href="Calender.html" style="display: inline-block;">
+                            <button>주간 날씨 확인하기</button>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h2>오늘의 뉴스</h2>
+                    <div>
+                        <a href="https://www.weather.go.kr/">
+                            <img src="image/news.png">
+                        </a>
+                    </div>
+                </div>
+
+                <script>
+                    function updateCurrentTime() {
+                        var currentTime = new Date();
+                        var hours = currentTime.getHours();
+                        var minutes = currentTime.getMinutes();
+                        var seconds = currentTime.getSeconds();
+
+                        hours = hours < 10 ? '0' + hours : hours;
+                        minutes = minutes < 10 ? '0' + minutes : minutes;
+                        seconds = seconds < 10 ? '0' + seconds : seconds;
+
+                        var formattedTime = hours + ':' + minutes + ':' + seconds;
+                        $('.time').text('현재 시간: ' + formattedTime);
+                    }
+
+                    // Initial call to set the current time
+                    updateCurrentTime();
+
+                    // Update the current time every second (1000 milliseconds)
+                    setInterval(updateCurrentTime, 1000);
+
+                </script>
+
+
+
+            </div>
+
+
+            <p id="result"></p>
+
+
+            <script type="text/javascript"
+                src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f947576697091bff2e0e78d06f2907db&amp;libraries=services"></script>
+            <script charset="UTF-8" src="https://t1.daumcdn.net/mapjsapi/js/main/4.4.8/kakao.js"></script>
+            <script charset="UTF-8" src="https://t1.daumcdn.net/mapjsapi/js/libs/services/1.0.2/services.js"></script>
+            <script>
+
+                // 마커를 클릭하면 장소명을 표출할 인포윈도우 입니다
+                var infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+
+                var mapContainer = document.getElementById('map'), // 지도를 표시할 div 
+                    mapOption = {
+                        center: new kakao.maps.LatLng(37.5662, 126.9784), // 지도의 중심좌표
+                        level: 10 // 지도의 확대 레벨
+
+                    };
+
+
+                var map = new kakao.maps.Map(mapContainer, mapOption);
+                var mapTypeControl = new kakao.maps.MapTypeControl();
+
+                map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+                var zoomControl = new kakao.maps.ZoomControl();
+                map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+                var geocoder = new kakao.maps.services.Geocoder();
+
+
+                kakao.maps.event.addListener(map, 'click', function (mouseEvent) {
+                    var latlng = mouseEvent.latLng;
+                    var lat = latlng.getLat().toFixed(2);
+                    var lng = latlng.getLng().toFixed(2);
+                    var message = '클릭한 위치의 좌표 (경도,위도): ' + lat + ', ' + lng;
+                    var resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = message;
+
+
+                    // Reset weather information
+                    $('.ctemp').empty();
+                    $('.lowtemp').empty();
+                    $('.hightemp').empty();
+                    $('.weather-icon').empty();
+                    $('.weather-item').removeClass('clouds rain clear default');
+                    document.body.style.backgroundImage = "url('images/default.jpg')"; $
+
+                    $.getJSON(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=cdd7a39d79ee9a2679ebc153356ed983&units=metric`,
+                        function (result) {
+                            // 날씨 정보 가져오기
+                            var currentTemp = result.main.temp.toFixed(1);
+                            var lowTemp = result.main.temp_min.toFixed(1);
+                            var highTemp = result.main.temp_max.toFixed(1);
+                            var weatherIconUrl = 'https://openweathermap.org/img/wn/' + result.weather[0].icon + '.png';
+                            var weatherDescription = result.weather[0].description;
+
+                            var weatherItem = $('.weather-item');
+                            if (weatherDescription.includes('cloud')) {
+                                weatherItem.addClass('clouds');
+                            } else if (weatherDescription.includes('rain')) {
+                                weatherItem.addClass('rain');
+                            } else if (weatherDescription.includes('clear')) {
+                                weatherItem.addClass('clear');
+                            } else {
+                                weatherItem.addClass('default');
+                            }
+
+                            // 날씨에 따라 배경 이미지 설정
+                            var body = document.body;
+                            if (weatherDescription.includes('cloud')) {
+                                body.style.backgroundImage = "url('image/cloudy.jpg')";
+                            } else if (weatherDescription.includes('rain')) {
+                                body.style.backgroundImage = "url('image/rainy.jpg')";
+                            } else if (weatherDescription.includes('mist')) {
+                                body.style.backgroundImage = "url('image/rainy.jpg')";
+                            } else if (weatherDescription.includes('clear')) {
+                                body.style.backgroundImage = "url('image/sunny.jpg')";
+                            } else {
+                                body.style.backgroundImage = "url('images/default.jpg')";
+                            }
+
+                            // 날씨 정보 업데이트
+                            $('.ctemp').append(currentTemp + '°C');
+                            $('.lowtemp').append(lowTemp + '°C');
+                            $('.hightemp').append(highTemp + '°C');
+                            $('.weather-icon').html('<img src="' + weatherIconUrl + '" alt="' + weatherDescription + '">');
+
+                        });
+                });
+
+
+                var marker = new kakao.maps.Marker({
+                    position: map.getCenter(),
+                    map: map
+                });
+
+                kakao.maps.event.addListener(map, 'click', function (mouseEvent) {
+                    searchDetailAddrFromCoords(mouseEvent.latLng, function (result2, status) {
+                        if (status === kakao.maps.services.Status.OK) {
+
+                            // 마커를 클릭한 위치에 표시합니다 
+                            marker.setPosition(mouseEvent.latLng);
+                            marker.setMap(map);
+                        }
+                    });
+                });
+
+                function searchAddrFromCoords(coords, callback) {
+                    geocoder.coord2RegionCode(coords.getLng(), coords.getLat(), callback);
+                }
+
+                function searchDetailAddrFromCoords(coords, callback) {
+                    geocoder.coord2Address(coords.getLng(), coords.getLat(), callback);
+                }
+
+
+
+
+                // 장소 검색 객체를 생성합니다
+                var ps = new kakao.maps.services.Places();
+
+
+
+                // 검색 결과 목록이나 마커를 클릭했을 때 장소명을 표출할 인포윈도우를 생성합니다
+                var infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+
+                // 키워드로 장소를 검색합니다
+                searchPlaces();
+
+                // 키워드 검색을 요청하는 함수입니다
+                function searchPlaces() {
+
+                    var keyword = document.getElementById('keyword').value;
+
+                    if (!keyword.replace(/^\s+|\s+$/g, '')) {
+                        // alert('장소를 입력해주세요!');
+                        return false;
+                    }
+
+                    // 장소검색 객체를 통해 키워드로 장소검색을 요청합니다
+                    ps.keywordSearch(keyword, placesSearchCB);
+                }
+
+
+
+                // 키워드 검색 완료 시 호출되는 콜백함수 입니다
+                function placesSearchCB(data, status, pagination) {
+                    if (status === kakao.maps.services.Status.OK) {
+
+                        // 검색된 장소 위치를 기준으로 지도 범위를 재설정하기위해
+                        // LatLngBounds 객체에 좌표를 추가합니다
+                        var bounds = new kakao.maps.LatLngBounds();
+
+                        for (var i = 0; i < data.length; i++) {
+                            displayMarker(data[i]);
+                            bounds.extend(new kakao.maps.LatLng(data[i].y, data[i].x));
+                        }
+
+                        // 검색된 장소 위치를 기준으로 지도 범위를 재설정합니다
+                        map.setBounds(bounds);
+                    }
+                }
+
+                // 지도에 마커를 표시하는 함수입니다
+                function displayMarker(place) {
+
+                    // 마커를 생성하고 지도에 표시합니다
+                    var marker = new kakao.maps.Marker({
+                        map: map,
+                        position: new kakao.maps.LatLng(place.y, place.x)
+                    });
+
+                    // 마커에 클릭이벤트를 등록합니다
+                    kakao.maps.event.addListener(marker, 'click', function () {
+                        // 마커를 클릭하면 장소명이 인포윈도우에 표출됩니다
+                        infowindow.setContent('<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>');
+                        infowindow.open(map, marker);
+                    });
+                }
+            </script>
+        </div>
+        
+        <script src="js/jquery.min.js"></script>
+        <script src="js/bootstrap.bundle.min.js"></script>
+        <script src="js/jquery-3.0.0.min.js"></script>
+        <!-- sidebar -->
+        <script src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+        <script src="js/custom.js"></script>
+        <script>
+            function openNav() {
+                document.getElementById("myNav").style.width = "100%";
+            }
+
+            function closeNav() {
+                document.getElementById("myNav").style.width = "0%";
+            }
+        </script>
+</body>
+
+</html>

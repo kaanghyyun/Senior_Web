@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>달력과 날씨</title>
+    <style>
+        body {
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .futureDay,
+        .pastDay {
+            height: 60px;
+        }
+
+        .todoItem {
+            margin-bottom: 10px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            margin-left: 50px;
+            margin-right: 50px;
+        }
+
+        .calendar-container {
+            width: 40%;
+            padding: 20px;
+        }
+
+        .weather-container {
+            width: 50%;
+        }
+
+        td[colspan="5"] {
+            text-align: center;
+        }
+
+        td {
+            width: 50px;
+            height: 30px;
+            background-color: white;
+        }
+
+        .todo-container {
+            background-color: #acecb6;
+        }
+
+
+        .Calendar {
+            text-align: center;
+            margin: 0 auto;
+            background-color: white;
+        }
+
+        .Calendar>thead>tr:first-child>td {
+            font-weight: bold;
+        }
+
+        .Calendar>thead>tr:last-child>td {
+            background-color: gray;
+            color: white;
+        }
+
+        .pastDay {
+            background-color: lightgray;
+        }
+
+        .today {
+            background-color: #f0d4a1;
+            cursor: pointer;
+        }
+
+        .futureDay {
+            background-color: rgb(200, 231, 220);
+            cursor: pointer;
+        }
+
+        .futureDay.choiceDay,
+        .today.choiceDay {
+            background-color: #80abe6;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        thead {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="weather-container">
+            <div>
+                <h2>주간 날씨 예보</h2>
+            </div>
+            <div id="forecast-tables"></div>
+        </div>
+
+        <div class="calendar-container">
+            <div>
+                <h2>월간 캘린더</h2>
+            </div>
+            <table class="Calendar">
+                <thead>
+                    <tr>
+                        <td onClick="prevCalendar();" style="cursor:pointer;">&#60;</td>
+                        <td colspan="5">
+                            <span id="calYear"></span>년
+                            <span id="calMonth"></span>월
+                        </td>
+                        <td onClick="nextCalendar();" style="cursor:pointer;">&#62;</td>
+                    </tr>
+                    <tr>
+                        <td>일</td>
+                        <td>월</td>
+                        <td>화</td>
+                        <td>수</td>
+                        <td>목</td>
+                        <td>금</td>
+                        <td>토</td>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                </tbody>
+            </table>
+
+            <div class="todo-container">
+                <h3>Todo List</h3>
+                <div id="todoList"></div>
+                <div id="inputContainer">
+                    <input type="text" id="dateInput" placeholder="메모">
+                    <button id="addButton">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 날씨 정보를 가져오는 스크립트 부분은 그대로 유지합니다. -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <script>
+        function updateTime() {
+            var currentTime = new Date();
+            var hours = currentTime.getHours();
+            var minutes = currentTime.getMinutes();
+            var seconds = currentTime.getSeconds();
+
+            var formattedTime = hours + '시 ' + minutes + '분 ' + seconds + '초';
+            $('#current-time').text(formattedTime);
+        }
+
+        $(document).ready(function () {
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    $.getJSON('https://api.openweathermap.org/data/2.5/forecast?q=Seoul&appid=cdd7a39d79ee9a2679ebc153356ed983&units=metric', function (result) {
+
+        function convertTime(t) {
+            var ot = new Date(t * 1000);
+            var month = ot.getMonth() + 1;
+            var date = ot.getDate();
+            var h = ot.getHours();
+
+            return month + '월 ' + date + '일, ' + h + '시';
+        }
+
+        var forecastsByDate = {};
+
+        for (var i = 0; i < result.list.length; i++) {
+            var forecast = result.list[i];
+            var forecastDate = new Date(forecast.dt * 1000).toDateString();
+
+            if (!forecastsByDate[forecastDate]) {
+                forecastsByDate[forecastDate] = [];
+            }
+
+            forecastsByDate[forecastDate].push(forecast);
+        }
+        var forecastDates = Object.keys(forecastsByDate);
+
+        for (var j = 0; j < forecastDates.length; j++) {
+            var forecastDate = forecastDates[j];
+            var forecasts = forecastsByDate[forecastDate];
+
+            var tableHtml = '<h3>' + forecastDate + '</h3>' +
+                '<table>' +
+                '<tr>' +
+                '<th>시간</th>' +
+                '<th>날씨</th>' +
+                '<th>온도</th>' +
+                '</tr>';
+
+            for (var k = 0; k < forecasts.length; k++) {
+                var forecastTime = convertTime(forecasts[k].dt);
+                var forecastTemperature = forecasts[k].main.temp + '도';
+                var weatherIcon = '<div class="weather-icon"><img src="https://openweathermap.org/img/wn/' + forecasts[k].weather[0].icon + '.png" alt="' + forecasts[k].weather[0].description + '"></div>';
+
+                tableHtml += '<tr>' +
+                    '<td>' + forecastTime + '</td>' +
+                    '<td>' + weatherIcon + '</td>' +
+                    '<td>' + forecastTemperature + '</td>' +
+                    '</tr>';
+            }
+
+            tableHtml += '</table>';
+
+            // 추가한 부분: 표 펼치기/접기 버튼
+            var tableWrapper = $('<div class="table-wrapper"></div>');
+            var toggleButton = $('<div class="toggle-button"></div>');
+            toggleButton.text('▼');
+            tableWrapper.append(toggleButton);
+            tableWrapper.append(tableHtml);
+            $('#forecast-tables').append(tableWrapper);
+        }
+
+        // 표 접기/펼치기 이벤트 처리
+        $('.toggle-button').click(function () {
+            var table = $(this).next('table');
+            if (table.is(':visible')) {
+                table.slideUp();
+                $(this).text('▼');
+            } else {
+                table.slideDown();
+                $(this).text('▲');
+            }
+        });
+    });
+});
+
+
+        // $(document).ready(function () {
+        //     updateTime();
+        //     setInterval(updateTime, 1000);
+
+        //     $.getJSON('https://api.openweathermap.org/data/2.5/forecast?q=Seoul&appid=cdd7a39d79ee9a2679ebc153356ed983&units=metric',
+        //         function (result) {
+
+        //             function convertTime(t) {
+        //                 var ot = new Date(t * 1000);
+        //                 var month = ot.getMonth() + 1;
+        //                 var date = ot.getDate();
+        //                 var h = ot.getHours();
+
+        //                 return month + '월 ' + date + '일, ' + h + '시';
+        //             }
+
+        //             var forecastsByDate = {};
+
+        //             for (var i = 0; i < result.list.length; i++) {
+        //                 var forecast = result.list[i];
+        //                 var forecastDate = new Date(forecast.dt * 1000).toDateString();
+
+        //                 if (!forecastsByDate[forecastDate]) {
+        //                     forecastsByDate[forecastDate] = [];
+        //                 }
+
+        //                 forecastsByDate[forecastDate].push(forecast);
+        //             } var forecastDates = Object.keys(forecastsByDate);
+
+        //             for (var j = 0; j < forecastDates.length; j++) {
+        //                 var forecastDate = forecastDates[j];
+        //                 var forecasts = forecastsByDate[forecastDate];
+
+        //                 var tableHtml = '<h3>' + forecastDate + '</h3>' +
+        //                     '<table>' +
+        //                     '<tr>' +
+        //                     '<th>시간</th>' +
+        //                     '<th>날씨</th>' +
+        //                     '<th>온도</th>' +
+        //                     '</tr>';
+
+        //                 for (var k = 0; k < forecasts.length; k++) {
+        //                     var forecastTime = convertTime(forecasts[k].dt);
+        //                     var forecastTemperature = forecasts[k].main.temp + '도';
+        //                     var weatherIcon = '<div class="weather-icon"><img src="https://openweathermap.org/img/wn/' + forecasts[k].weather[0].icon + '.png" alt="' + forecasts[k].weather[0].description + '"></div>';
+
+        //                     tableHtml += '<tr>' +
+        //                         '<td>' + forecastTime + '</td>' +
+        //                         '<td>' + weatherIcon + '</td>' +
+        //                         '<td>' + forecastTemperature + '</td>' +
+        //                         '</tr>';
+        //                 }
+
+        //                 tableHtml += '</table>';
+        //                 $('#forecast-tables').append(tableHtml);
+        //             }
+        //         });
+        // });
+
+        $(document).ready(function () {
+            // TodoList 저장
+            $("#addButton").on("click", function () {
+                var todoText = $("#dateInput").val().trim();
+                var selectedDate = $(".choiceDay").text();
+
+                if (selectedDate !== "" && todoText !== "") {
+                    var todoItem = $("<div>").addClass("todoItem").text(todoText).css({
+                        "font-size": "10px"
+                    });
+
+                    var deleteButton = $("<button>")
+                        .addClass("deleteButton")
+                        .text("X")
+                        .css({
+                            background: "transparent",
+                            color: "red"
+                        });
+
+                    todoItem.append(deleteButton);
+
+                    var dateContainer = $("td").filter(function () {
+                        return $(this).text() === selectedDate;
+                    });
+
+                    if (dateContainer.find(".todoContainer").length === 0) {
+                        var todoContainer = $("<div>").addClass("todoContainer");
+                        todoContainer.append(todoItem);
+                        dateContainer.append(todoContainer);
+                    } else {
+                        var todoContainer = dateContainer.find(".todoContainer");
+                        todoContainer.append(todoItem);
+                    }
+
+                    $("#dateInput").val("");
+                }
+            });
+
+
+            // TodoList 삭제
+            $(".Calendar").on("click", ".deleteButton", function () {
+                $(this).parent(".todoItem").remove();
+            });
+        });
+
+
+
+
+
+
+        window.onload = function () { buildCalendar(); }
+
+        let nowMonth = new Date();
+        let today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        function buildCalendar() {
+
+            let firstDate = new Date(nowMonth.getFullYear(), nowMonth.getMonth(), 1);     // 이번달 1일
+            let lastDate = new Date(nowMonth.getFullYear(), nowMonth.getMonth() + 1, 0);  // 이번달 마지막날
+
+            let tbody_Calendar = document.querySelector(".Calendar > tbody");
+            document.getElementById("calYear").innerText = nowMonth.getFullYear();             // 연도 숫자 갱신
+            document.getElementById("calMonth").innerText = leftPad(nowMonth.getMonth() + 1);  // 월 숫자 갱신
+
+            while (tbody_Calendar.rows.length > 0) {                        // 이전 출력결과가 남아있는 경우 초기화
+                tbody_Calendar.deleteRow(tbody_Calendar.rows.length - 1);
+            }
+
+            let nowRow = tbody_Calendar.insertRow();        // 첫번째 행 추가           
+
+            for (let j = 0; j < firstDate.getDay(); j++) {  // 이번달 1일의 요일만큼
+                let nowColumn = nowRow.insertCell();        // 열 추가
+            }
+
+            for (let nowDay = firstDate; nowDay <= lastDate; nowDay.setDate(nowDay.getDate() + 1)) {   // day는 날짜를 저장하는 변수, 이번달 마지막날까지 증가시키며 반복  
+
+                let nowColumn = nowRow.insertCell();        // 새 열을 추가하고
+                nowColumn.innerText = leftPad(nowDay.getDate());      // 추가한 열에 날짜 입력
+
+
+                if (nowDay.getDay() == 0) {                 // 일요일인 경우 글자색 빨강으로
+                    nowColumn.style.color = "#DC143C";
+                }
+                if (nowDay.getDay() == 6) {                 // 토요일인 경우 글자색 파랑으로 하고
+                    nowColumn.style.color = "#0000CD";
+                    nowRow = tbody_Calendar.insertRow();    // 새로운 행 추가
+                }
+
+
+                if (nowDay < today) {                       // 지난날인 경우
+                    nowColumn.className = "pastDay";
+                }
+                else if (nowDay.getFullYear() == today.getFullYear() && nowDay.getMonth() == today.getMonth() && nowDay.getDate() == today.getDate()) { // 오늘인 경우           
+                    nowColumn.className = "today";
+                    nowColumn.onclick = function () { choiceDate(this); }
+                }
+                else {                                      // 미래인 경우
+                    nowColumn.className = "futureDay";
+                    nowColumn.onclick = function () { choiceDate(this); }
+                }
+            }
+        }
+
+        // 날짜 선택
+        function choiceDate(nowColumn) {
+            if (document.getElementsByClassName("choiceDay")[0]) {
+                document.getElementsByClassName("choiceDay")[0].classList.remove("choiceDay");
+            }
+            nowColumn.classList.add("choiceDay");
+
+            let inputContainer = document.getElementById("inputContainer");
+            let inputElement = document.getElementById("dateInput");
+
+            if (inputContainer) {
+                inputContainer.style.display = "none";
+            } else {
+                inputContainer = document.createElement("div");
+                inputContainer.id = "inputContainer";
+
+                inputElement = document.createElement("input");
+                inputElement.type = "text";
+                inputElement.id = "dateInput";
+                inputElement.placeholder = "메모";
+                inputElement.addEventListener("blur", function () {
+                    inputContainer.style.display = "none";
+                });
+
+                let addButton = document.createElement("button");
+                addButton.innerText = "추가";
+                addButton.addEventListener("click", function () {
+                    addTodo();
+                });
+
+                inputContainer.appendChild(inputElement);
+                inputContainer.appendChild(addButton);
+                document.body.appendChild(inputContainer);
+            }
+
+            let rect = nowColumn.getBoundingClientRect();
+            inputContainer.style.left = rect.left + "px";
+            inputContainer.style.top = rect.bottom + "px";
+            inputContainer.style.display = "block";
+            inputElement.focus();
+        }
+
+        function addTodo() {
+            let inputElement = document.getElementById("dateInput");
+            let todoText = inputElement.value.trim();
+
+            if (todoText !== "") {
+                let todoList = document.getElementById("todoList");
+                let todoItem = document.createElement("div");
+                todoItem.className = "todoItem";
+                todoItem.innerText = todoText;
+                todoList.appendChild(todoItem);
+                inputElement.value = "";
+            }
+        }
+
+
+
+        // // 이전달 버튼 클릭
+        function prevCalendar() {
+            nowMonth = new Date(nowMonth.getFullYear(), nowMonth.getMonth() - 1, nowMonth.getDate());   // 현재 달을 1 감소
+            buildCalendar();    // 달력 다시 생성
+        }
+        // 다음달 버튼 클릭
+        function nextCalendar() {
+            nowMonth = new Date(nowMonth.getFullYear(), nowMonth.getMonth() + 1, nowMonth.getDate());   // 현재 달을 1 증가
+            buildCalendar();    // 달력 다시 생성
+        }
+
+        // input값이 한자리 숫자인 경우 앞에 '0' 붙혀주는 함수
+        function leftPad(value) {
+            if (value < 10) {
+                value = "0" + value;
+                return value;
+            }
+            return value;
+        }
+        // 날짜 선택
+        function choiceDate(nowColumn) {
+            if (document.getElementsByClassName("choiceDay")[0]) {
+                document.getElementsByClassName("choiceDay")[0].classList.remove("choiceDay");
+            }
+            nowColumn.classList.add("choiceDay");
+
+            // 이미지 클래스 추가
+            var month = nowMonth.getMonth() + 1;
+            var season = getSeason(month);
+            document.querySelector(".container").className = "container " + season + "-image";
+
+            // 이하 생략
+        }
+
+        $(document).ready(function () {
+            var monthImages = {
+                "3": "seasons/march.jpg",   // 봄 이미지 파일명
+                "4": "seasons/april.jpg",
+                "5": "seasons/may.png",
+                "6": "seasons/june.jpg",   // 여름 이미지 파일명
+                "7": "seasons/july.jpg",
+                "8": "seasons/august.png",
+                "9": "seasons/september.jpg",   // 가을 이미지 파일명
+                "10": "seasons/october.jpg",
+                "11": "seasons/november.jpg",
+                "12": "seasons/december.jpg",  // 겨울 이미지 파일명
+                "1": "seasons/january.jpg",
+                "2": "seasons/february.jpg"
+            };
+
+            function changeMonthImage(month) {
+                var imageUrl = monthImages[month];
+                if (imageUrl) {
+                    $("body").css("background-image", "url(" + imageUrl + ")");
+                }
+            }
+
+            // 페이지 로드 시 현재 월에 해당하는 이미지 설정
+            var currentDate = new Date();
+            var currentMonth = currentDate.getMonth() + 1;
+            changeMonthImage(currentMonth);
+        });
+
+
+    </script>
+</body>
+
+</html>
